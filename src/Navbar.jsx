@@ -16,9 +16,8 @@ export default function Navbar() {
         <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link>
         <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>I tuoi conti</Link>
         <Link to="/spese" style={{ color: 'white', textDecoration: 'none' }}>Le tue Spese</Link>
-        <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>I tuoi Investimenti</Link>
+        <Link to="/investimento" style={{ color: 'white', textDecoration: 'none' }}>I tuoi Investimenti</Link>
         <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>Statistiche</Link>
-        <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>Entrate</Link>
         <Link to="/impostazioni" style={{ color: 'white', textDecoration: 'none' }}>Impostazioni</Link>
         <Link to="/spese" style={{ color: 'white', textDecoration: 'none' }}>LogOut</Link>
       </div>
