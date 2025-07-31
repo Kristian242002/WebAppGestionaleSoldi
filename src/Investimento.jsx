@@ -80,24 +80,38 @@ export default function Investimenti() {
     fetchData()
   }
 
-  const eliminaInvestimento = async (inv) => {
-    const variazioni = storico.filter(s => s.idInvestimento === inv.id)
+const eliminaInvestimento = async (inv) => {
+  const carta = carte.find(c => c.id === inv.idCarta)
+  if (!carta) return
 
-    let sommaVariazioni = 0
-    for (const s of variazioni) {
-      sommaVariazioni += s.differenza
-      const carta = carte.find(c => c.id === inv.idCarta)
-      const nuovoTotale = parseFloat(carta.totale) - s.differenza
-      await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
-      await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
-    }
+  const variazioni = storico
+    .filter(s => s.idInvestimento === inv.id)
+    .sort((a, b) => new Date(a.data) - new Date(b.data)) // ordine cronologico
 
-    const carta = carte.find(c => c.id === inv.idCarta)
-    const nuovoTotale = parseFloat(carta.totale) + parseFloat(inv.ImportoIniziale ?? 0)
-    await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
-    await supabase.from('Investimento').delete().eq('id', inv.id)
-    fetchData()
+  // Elimina ogni storico uno per uno, aggiornando ogni volta
+  for (const s of variazioni) {
+    const nuovoTotaleCarta = parseFloat(carta.totale) - s.differenza
+    const nuovoImportoInvestimento = parseFloat(inv.importo) - s.differenza
+
+    await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
+    await supabase.from('Investimento').update({ importo: nuovoImportoInvestimento }).eq('id', inv.id)
+    await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
+
+    // aggiorna lo stato locale se vuoi evitare flicker
+    inv.importo = nuovoImportoInvestimento
+    carta.totale = nuovoTotaleCarta
   }
+
+  // Ora che è tornato al valore iniziale, ripristina l'importo iniziale alla carta
+  const nuovoTotaleFinale = parseFloat(carta.totale) + parseFloat(inv.ImportoIniziale ?? 0)
+  await supabase.from('Carta').update({ totale: nuovoTotaleFinale }).eq('id', carta.id)
+
+  // Infine elimina l’investimento
+  await supabase.from('Investimento').delete().eq('id', inv.id)
+
+  fetchData()
+}
+
 
   const aggiungiInvestimento = async e => {
     e.preventDefault()
