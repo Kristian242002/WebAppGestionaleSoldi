@@ -1,12 +1,22 @@
-# React + Vite
+# MyCash – App per la gestione delle finanze personali
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**MyCash** è un'applicazione web sviluppata con React e Vite per aiutare l'utente a monitorare in modo chiaro e pratico entrate, uscite e investimenti personali.  
+L’obiettivo è fornire una panoramica completa delle proprie finanze attraverso un’interfaccia semplice, strumenti visuali efficaci e il supporto a più conti e categorie.
 
-Currently, two official plugins are available:
+## Funzionalità principali
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Gestione movimenti**: aggiungi spese e guadagni, filtra per carta o categoria e tieni traccia dello storico.
+- **Investimenti**: monitora investimenti nel tempo, con storico delle variazioni e impatto sui conti collegati.
+- **Grafici dinamici**: visualizza l’andamento delle spese/entrate per periodo e categoria con diversi tipi di grafico (torta, barre, linee).
+- **Conti personalizzati**: supporto a carte/conto multipli, con saldo aggiornato automaticamente.
+- **Impostazioni utente**: cambio immagine profilo, modifica password, gestione utenti (per admin).
+- **Autenticazione con Supabase**: login sicuro tramite email/password e gestione dei dati utenti.
 
-## Expanding the ESLint configuration
+## Tecnologie utilizzate
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- [React](https://reactjs.org/) + [Vite](https://vitejs.dev/) per il frontend
+- [Supabase](https://supabase.com/) per database, autenticazione e storage
+- [Chart.js](https://www.chartjs.org/) per i grafici
+- [Tailwind CSS](https://tailwindcss.com/) per la grafica
+- [PostgreSQL](https://www.postgresql.org/) come database relazionale
+- JavaScript (client-side)
