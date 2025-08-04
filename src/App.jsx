@@ -5,6 +5,7 @@ import Conti from './Conti'
 import Spese from './Spese'
 import Investimento from './Investimento'
 import Impostazioni from './impostazioni'
+import Statistiche from './Statistiche'
 function App() {
   return (
     <BrowserRouter>
@@ -16,6 +17,7 @@ function App() {
         <Route path="/spese" element={<Spese />} />
         <Route path='/investimento' element={<Investimento/>}/>
         <Route path ='/impostazioni' element={<Impostazioni/>}/>
+        <Route path ='/statistiche' element={<Statistiche/>}/>
       </Routes>
     </BrowserRouter>
   )

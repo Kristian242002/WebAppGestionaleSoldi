@@ -1,0 +1,217 @@
+
+body {
+  scroll-padding-top: 70px; /* altezza della navbar fissa */
+}
+.spese-container {
+  width: 100vw;
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #e4e4e4;
+  padding: 120px 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spese-header {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spese-header h2 {
+  font-size: 2rem;
+  color: #66ffd9;
+}
+
+.spese-header button {
+  background-color: #66ffd9;
+  color: #121826;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 0 6px rgba(102, 255, 217, 0.6);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.spese-header button:hover {
+  background-color: #4dddc0;
+}
+
+.saldo-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  background-color: #252547;
+  padding: 1.5rem;
+  border-radius: 14px;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: 0 0 10px rgba(122, 111, 255, 0.25);
+}
+
+.saldo-box strong {
+  color: #66ffd9;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.saldo-carta {
+  background-color: #1a1a2f;
+  padding: 0.75rem 1.2rem;
+  border-radius: 10px;
+  color: #e4e4e4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.saldo-carta p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.saldo-carta span {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #66ffd9;
+}
+
+.nuova-transazione-form {
+  width: 100%;
+  max-width: 800px;
+  background-color: #2a2a2a;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.nuova-transazione-form label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.nuova-transazione-form input,
+.nuova-transazione-form select {
+  width: 100%;
+  margin-bottom: 1.2rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background-color: #1a1a1a;
+  color: white;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.nuova-transazione-form input:focus,
+.nuova-transazione-form select:focus {
+  border-color: #66ffd9;
+  outline: none;
+  box-shadow: 0 0 6px rgba(102, 255, 217, 0.4);
+}
+
+.nuova-transazione-form button {
+  background-color: #66ffd9;
+  color: #121826;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 0 6px rgba(102, 255, 217, 0.5);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.nuova-transazione-form button:hover {
+  background-color: #4dddc0;
+}
+
+.transazione-item {
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 800px;
+  transition: transform 0.2s ease;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.transazione-item.entrata {
+  background-color: #173c30;
+  border-left: 6px solid #00ff88;
+}
+
+.transazione-item.uscita {
+  background-color: #3d1f1f;
+  border-left: 6px solid #ff4c4c;
+}
+
+.transazione-item:hover {
+  transform: scale(1.01);
+}
+
+.transazione-item strong {
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.transazione-item small {
+  color: #ccc;
+}
+
+.transazione-item button {
+  margin-top: 0.5rem;
+  background-color: #ff4c4c;
+  border: none;
+  color: white;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.transazione-item button:hover {
+  background-color: #ff2a2a;
+}
+.filtro-transazioni {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.filtro-transazioni label {
+  margin-right: 0.8rem;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #e4e4e4;
+}
+
+.filtro-transazioni select {
+  padding: 0.6rem 1rem;
+  background-color: #1a1a2f;
+  color: white;
+  border: 2px solid #444;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.filtro-transazioni select:focus {
+  border-color: #66ffd9;
+  outline: none;
+  box-shadow: 0 0 6px rgba(102, 255, 217, 0.4);
+}

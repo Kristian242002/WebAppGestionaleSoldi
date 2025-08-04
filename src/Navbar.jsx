@@ -1,90 +1,44 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import React from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
+import './Navbar.css'
+import logo from './Img/logo.png'
 
 export default function Navbar() {
-  const [imgUrl, setImgUrl] = useState(null)
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchImg = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (error || !user) {
-        console.error('Errore auth:', error)
-        return
-      }
-
-      const { data: utente, error: err2 } = await supabase
-        .from('Utente')
-        .select('urlPic')
-        .eq('idUUID', user.id)
-        .single()
-
-      if (err2) {
-        console.error('Errore caricamento utente:', err2)
-        return
-      }
-
-      console.log('✅ IMG URL LETTO:', utente?.urlPic)
-
-      if (utente?.urlPic) {
-        setImgUrl(utente.urlPic)
-      }
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (!error) {
+      navigate('/')
+    } else {
+      console.error('Errore durante il logout:', error.message)
     }
-
-    fetchImg()
-  }, [])
+  }
 
   return (
-    <nav style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1rem 2rem',
-      backgroundColor: '#1a1a1a',
-      color: 'white',
-      marginBottom: '2rem'
-    }}>
-      <div style={{ display: 'flex', gap: '2rem' }}>
-        <Link to="/dashboard" style={{ color: 'white', textDecoration: 'none' }}>Dashboard</Link>
-        <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>I tuoi conti</Link>
-        <Link to="/spese" style={{ color: 'white', textDecoration: 'none' }}>Le tue Spese</Link>
-        <Link to="/investimento" style={{ color: 'white', textDecoration: 'none' }}>I tuoi Investimenti</Link>
-        <Link to="/conti" style={{ color: 'white', textDecoration: 'none' }}>Statistiche</Link>
-        <Link to="/impostazioni" style={{ color: 'white', textDecoration: 'none' }}>Impostazioni</Link>
-        <Link to="/spese" style={{ color: 'white', textDecoration: 'none' }}>LogOut</Link>
-      </div>
+    <>
+      <nav className="navbar">
+        <div className="navbar-section navbar-left">
+          <img src={logo} alt="MyCash Logo" className="navbar-logo" />
+          <span className="navbar-title">MyCash</span>
+        </div>
 
-      <div>
-        {imgUrl ? (
-          <img
-            src={imgUrl}
-            alt="Profilo"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid white',
-              backgroundColor: '#444'
-            }}
-          />
-        ) : (
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: '#444',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: '1.2rem'
-          }}>
-            ?
-          </div>
-        )}
-      </div>
-    </nav>
+        <div className="navbar-section navbar-center">
+          <Link to="/dashboard">Dashboard</Link>
+          <Link to="/conti">Conti</Link>
+          <Link to="/spese">Spese</Link>
+          <Link to="/investimento">Investimenti</Link>
+          <Link to="/statistiche">Statistiche</Link>
+          <Link to="/impostazioni">Impostazioni</Link>
+        </div>
+
+        <div className="navbar-section navbar-right">
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
+        </div>
+      </nav>
+
+      <div className="navbar-spacer"></div>
+    </>
   )
 }

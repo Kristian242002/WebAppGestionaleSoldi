@@ -1,41 +1,36 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Navbar from './Navbar'
+import './Spese.css'
 
 export default function Spese() {
   const [storico, setStorico] = useState([])
   const [errore, setErrore] = useState(null)
   const [idUtente, setIdUtente] = useState(null)
-
   const [mostraForm, setMostraForm] = useState(false)
   const [titolo, setTitolo] = useState('')
   const [data, setData] = useState('')
   const [importo, setImporto] = useState('')
   const [categoria, setCategoria] = useState('')
   const [carta, setCarta] = useState('')
-  const [tipoTransazione, setTipoTransazione] = useState('uscita') // 'entrata' o 'uscita'
+  const [tipoTransazione, setTipoTransazione] = useState('uscita')
   const [categorie, setCategorie] = useState([])
   const [carte, setCarte] = useState([])
+  const [filtro, setFiltro] = useState('tutti')
+  const [pagina, setPagina] = useState(1)
+  const perPagina = 5
 
-  const fetchStorico = async () => {
+  const fetchStorico = async (paginaCorrente = 1) => {
     const { data: { user }, error } = await supabase.auth.getUser()
-    if (error || !user) {
-      setErrore('Errore nel recupero utente Supabase')
-      return
-    }
+    if (error || !user) return setErrore('Errore nel recupero utente Supabase')
 
-    const idUUID = user.id
     const { data: utente, error: errUtente } = await supabase
       .from('Utente')
       .select('id')
-      .eq('idUUID', idUUID)
+      .eq('idUUID', user.id)
       .single()
 
-    if (errUtente || !utente) {
-      setErrore('Utente non trovato nel sistema')
-      return
-    }
-
+    if (errUtente || !utente) return setErrore('Utente non trovato nel sistema')
     setIdUtente(utente.id)
 
     const { data: categorieData } = await supabase.from('Categorie').select()
@@ -47,44 +42,39 @@ export default function Spese() {
       supabase
         .from('Uscite')
         .select(`
-          id,
-          importo,
-          data,
-          titolo,
-          idCarta,
-          Carta ( titolare ),
-          Categorie ( nome )
+          id, importo, data, titolo, idCarta,
+          Carta ( titolare ), Categorie ( nome )
         `)
         .eq('idUtente', utente.id),
 
       supabase
         .from('Entrate')
         .select(`
-          id,
-          importo,
-          data,
-          titolo,
-          idCarta,
-          Carta ( titolare ),
-          Categorie ( nome )
+          id, importo, data, titolo, idCarta,
+          Carta ( titolare ), Categorie ( nome )
         `)
         .eq('idUtente', utente.id)
     ])
 
-    if (uscite.error || entrate.error) {
-      setErrore('Errore nel recupero di entrate o uscite')
-      return
-    }
+    if (uscite.error || entrate.error) return setErrore('Errore nel recupero di entrate o uscite')
 
     const taggateUscite = (uscite.data || []).map(s => ({ ...s, tipo: 'uscita' }))
     const taggateEntrate = (entrate.data || []).map(e => ({ ...e, tipo: 'entrata' }))
     const tutti = [...taggateUscite, ...taggateEntrate].sort((a, b) => new Date(b.data) - new Date(a.data))
-    setStorico(tutti)
+
+    const filtrati = tutti.filter(t => {
+      if (filtro === 'tutti') return true
+      return t.tipo === filtro
+    })
+
+    const start = 0
+    const end = perPagina * paginaCorrente
+    setStorico(filtrati.slice(0, end))
   }
 
   useEffect(() => {
-    fetchStorico()
-  }, [])
+    fetchStorico(pagina)
+  }, [filtro, pagina])
 
   const aggiornaSaldoCarta = async (idCarta, importo, tipo) => {
     const carta = carte.find(c => c.id === parseInt(idCarta))
@@ -99,22 +89,15 @@ export default function Spese() {
 
   const eliminaTransazione = async (transazione) => {
     const tabella = transazione.tipo === 'uscita' ? 'Uscite' : 'Entrate'
-
-    // Ripristina saldo
     await aggiornaSaldoCarta(transazione.idCarta, transazione.importo, transazione.tipo === 'entrata' ? 'uscita' : 'entrata')
-
     const { error } = await supabase.from(tabella).delete().eq('id', transazione.id)
-    if (error) {
-      setErrore("Errore nella cancellazione: " + error.message)
-    } else {
-      fetchStorico()
-    }
+    if (!error) fetchStorico(pagina)
+    else setErrore("Errore nella cancellazione: " + error.message)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     const tabella = tipoTransazione === 'uscita' ? 'Uscite' : 'Entrate'
-
     const { error } = await supabase.from(tabella).insert({
       titolo,
       importo: parseFloat(importo),
@@ -124,9 +107,8 @@ export default function Spese() {
       idUtente
     })
 
-    if (error) {
-      setErrore("Errore nell'inserimento: " + error.message)
-    } else {
+    if (error) setErrore("Errore nell'inserimento: " + error.message)
+    else {
       await aggiornaSaldoCarta(carta, importo, tipoTransazione)
       setTitolo('')
       setData('')
@@ -134,90 +116,80 @@ export default function Spese() {
       setCategoria('')
       setCarta('')
       setMostraForm(false)
-      fetchStorico()
+      fetchStorico(pagina)
     }
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="spese-container">
       <Navbar />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="spese-header">
         <h2>Spese</h2>
-        <button
-          onClick={() => setMostraForm(prev => !prev)}
-          style={{ fontSize: '1.5rem', padding: '0.4rem 1rem' }}
-        >
-          {mostraForm ? '✖️ Chiudi' : '➕ Aggiungi'}
-        </button>
+        {!mostraForm && (
+          <button onClick={() => setMostraForm(true)}>Aggiungi</button>
+        )}
       </div>
 
-      <hr style={{ margin: '1rem 0' }} />
-      <h3>Storico</h3>
+  <div className="filtro-transazioni">
+    <label htmlFor="filtro">Filtra:</label>
+    <select
+      id="filtro"
+      value={filtro}
+      onChange={e => {
+        setPagina(1);
+        setFiltro(e.target.value);
+      }}
+    >
+      <option value="tutti">Tutte</option>
+      <option value="entrata">Entrate</option>
+      <option value="uscita">Uscite</option>
+    </select>
+  </div>
 
-      {/* PREVIEW SALDO CARTA */}
+
       {carte.length > 0 && (
-        <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f3f3f3', borderRadius: '8px' }}>
-          <strong>Saldo attuale carte:</strong>
-          <ul>
-            {carte.map(c => (
-              <li key={c.id}>
-                {c.titolare} – € {c.totale.toFixed(2)}
-              </li>
-            ))}
-          </ul>
+        <div className="saldo-box">
+          <strong>Saldo attuale carte</strong>
+          {carte.map(c => (
+            <div key={c.id} className="saldo-carta">
+              <p>{c.titolare}</p>
+              <span>€ {c.totale.toFixed(2)}</span>
+            </div>
+          ))}
         </div>
       )}
 
       {mostraForm && (
-        <form onSubmit={handleSubmit}
-          style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+        <form onSubmit={handleSubmit} className="nuova-transazione-form">
           <h4>Nuova Transazione</h4>
-
-          <div>
-            <label>Tipo:</label><br />
-            <select value={tipoTransazione} onChange={e => setTipoTransazione(e.target.value)}>
-              <option value="uscita">Uscita</option>
-              <option value="entrata">Entrata</option>
-            </select>
+          <label>Tipo:</label>
+          <select value={tipoTransazione} onChange={e => setTipoTransazione(e.target.value)}>
+            <option value="uscita">Uscita</option>
+            <option value="entrata">Entrata</option>
+          </select>
+          <label>Titolo:</label>
+          <input type="text" value={titolo} onChange={e => setTitolo(e.target.value)} required />
+          <label>Data:</label>
+          <input type="date" value={data} onChange={e => setData(e.target.value)} required />
+          <label>Importo (€):</label>
+          <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)} required />
+          <label>Categoria:</label>
+          <select value={categoria} onChange={e => setCategoria(e.target.value)} required>
+            <option value="">-- Seleziona categoria --</option>
+            {categorie.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          <label>Carta:</label>
+          <select value={carta} onChange={e => setCarta(e.target.value)} required>
+            <option value="">-- Seleziona carta --</option>
+            {carte.map(c => <option key={c.id} value={c.id}>{c.titolare}</option>)}
+          </select>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+            <button type="submit">Salva</button>
+            <button type="button" onClick={() => setMostraForm(false)} style={{ backgroundColor: '#444' }}>
+              Indietro
+            </button>
           </div>
-
-          <div>
-            <label>Titolo:</label><br />
-            <input type="text" value={titolo} onChange={e => setTitolo(e.target.value)} required />
-          </div>
-
-          <div>
-            <label>Data:</label><br />
-            <input type="date" value={data} onChange={e => setData(e.target.value)} required />
-          </div>
-
-          <div>
-            <label>Importo (€):</label><br />
-            <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)} required />
-          </div>
-
-          <div>
-            <label>Categoria:</label><br />
-            <select value={categoria} onChange={e => setCategoria(e.target.value)} required>
-              <option value="">-- Seleziona categoria --</option>
-              {categorie.map(c => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label>Carta:</label><br />
-            <select value={carta} onChange={e => setCarta(e.target.value)} required>
-              <option value="">-- Seleziona carta --</option>
-              {carte.map(c => (
-                <option key={c.id} value={c.id}>{c.titolare}</option>
-              ))}
-            </select>
-          </div>
-
-          <button type="submit">💾 Salva</button>
         </form>
       )}
 
@@ -226,19 +198,21 @@ export default function Spese() {
       {storico.length === 0 ? (
         <p>Non ci sono ancora spese o entrate registrate.</p>
       ) : (
-        <ul>
+        <>
           {storico.map(s => (
-            <li key={s.tipo + '-' + s.id} style={{ marginBottom: '1rem' }}>
-              <strong>
-                [{s.tipo === 'entrata' ? 'Entrata' : 'Uscita'}] {s.titolo}
-              </strong> – € {s.importo.toFixed(2)}<br />
+            <div key={s.tipo + '-' + s.id} className={`transazione-item ${s.tipo}`}>
+              <strong>[{s.tipo === 'entrata' ? 'Entrata' : 'Uscita'}] {s.titolo}</strong>
+              € {s.importo.toFixed(2)}<br />
               <small>
                 Categoria: {s.Categorie?.nome || 'N/D'} – Carta: {s.Carta?.titolare || 'N/D'} – {new Date(s.data).toLocaleDateString()}
               </small><br />
-              <button onClick={() => eliminaTransazione(s)} style={{ marginTop: '0.3rem' }}>🗑️ Elimina</button>
-            </li>
+              <button onClick={() => eliminaTransazione(s)}>Elimina</button>
+            </div>
           ))}
-        </ul>
+          <button style={{ marginTop: '1rem' }} onClick={() => setPagina(prev => prev + 1)}>
+            Carica altri
+          </button>
+        </>
       )}
     </div>
   )

@@ -1,0 +1,124 @@
+/* Statistiche.css */
+
+.statistiche-container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 2rem;
+  color: #eaeaea;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+h2 {
+  text-align: center;
+  font-size: 2.2rem;
+  color: #66ffd9;
+  margin-bottom: 2rem;
+}
+
+.statistica-evidenza {
+  background: #2a2a2a;
+  border-left: 5px solid #66ffd9;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.statistica-evidenza p {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.statistica-evidenza .suggerimento {
+  font-style: italic;
+  color: #ccc;
+}
+
+.filtri-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  justify-content: space-between;
+}
+
+.filtri-container > div {
+  flex: 1 1 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filtri-container label {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #aaa;
+}
+
+.filtri-container select,
+.filtri-container input[type="date"] {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #333;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: background 0.3s;
+}
+
+.filtri-container select:focus,
+.filtri-container input[type="date"]:focus {
+  background: #444;
+}
+
+.categorie-checkbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+  border-top: 1px solid #333;
+  border-bottom: 1px solid #333;
+}
+
+.categorie-checkbox label {
+  background: #2b2b2b;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.categorie-checkbox input {
+  transform: scale(1.2);
+}
+
+.categorie-checkbox label:hover {
+  background: #3a3a3a;
+}
+
+.grafico-box {
+  background: #2a2a2a;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .filtri-container {
+    flex-direction: column;
+  }
+
+  .categorie-checkbox {
+    flex-direction: column;
+  }
+
+  .grafico-box {
+    padding: 0.8rem;
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Navbar from './Navbar'
+import './Conti.css'
 
 export default function Conti() {
   const [conti, setConti] = useState([])
@@ -17,12 +18,10 @@ export default function Conti() {
         return
       }
 
-      const idUUID = user.id
-
       const { data: utente, error: errUtente } = await supabase
         .from('Utente')
         .select('id')
-        .eq('idUUID', idUUID)
+        .eq('idUUID', user.id)
         .single()
 
       if (errUtente || !utente) {
@@ -55,9 +54,9 @@ export default function Conti() {
     const { error } = await supabase
       .from('Carta')
       .insert({
-        titolare: titolare,
+        titolare,
         totale: parseFloat(totale),
-        idUtente: idUtente
+        idUtente
       })
 
     if (error) {
@@ -66,12 +65,10 @@ export default function Conti() {
       return
     }
 
-    // Reset form
     setTitolare('')
     setTotale('')
     setErrore(null)
 
-    // Ricarica conti
     const { data: aggiornata } = await supabase
       .from('Carta')
       .select('*')
@@ -79,63 +76,73 @@ export default function Conti() {
 
     setConti(aggiornata)
   }
-const handleDeleteConto = async (id) => {
-  const { error } = await supabase
-    .from('Carta')
-    .delete()
-    .eq('id', id)
 
-  if (error) {
-    setErrore('Errore durante l\'eliminazione')
-    console.error(error)
-    return
+  const handleDeleteConto = async (id) => {
+    const { error } = await supabase
+      .from('Carta')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      setErrore('Errore durante l\'eliminazione')
+      console.error(error)
+      return
+    }
+
+    setConti(prev => prev.filter(c => c.id !== id))
   }
 
-  setConti(prev => prev.filter(c => c.id !== id))
-}
-
   return (
-  <>
-    <Navbar />
+    <>
+      <Navbar />
+      <div className="conti-container">
+        <div className="conti-wrapper">
+          <h2>I tuoi conti</h2>
 
-    <div style={{ padding: '2rem' }}>
-      <h2>I tuoi conti</h2>
+          <form className="form-conti" onSubmit={handleAddConto}>
+            <input
+              type="text"
+              placeholder="Titolare o nome conto"
+              value={titolare}
+              onChange={(e) => setTitolare(e.target.value)}
+              required
+            />
+            <input
+              type="number"
+              placeholder="Totale iniziale (€)"
+              value={totale}
+              onChange={(e) => setTotale(e.target.value)}
+              step="0.01"
+              required
+            />
+            <button type="submit" className="btn-primary">Aggiungi conto</button>
+          </form>
 
-      <form onSubmit={handleAddConto} style={{ marginBottom: '2rem' }}>
-        <input
-          type="text"
-          placeholder="Titolare o nome conto"
-          value={titolare}
-          onChange={(e) => setTitolare(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Totale iniziale"
-          value={totale}
-          onChange={(e) => setTotale(e.target.value)}
-          step="0.01"
-          required
-        />
-        <button type="submit">➕ Aggiungi conto</button>
-      </form>
+          {errore && <p className="errore-msg">{errore}</p>}
 
-      {errore && <p style={{ color: 'red' }}>{errore}</p>}
-
-      {conti.length === 0 ? (
-        <p>Nessun conto trovato.</p>
-      ) : (
-        <ul>
-          {conti.map(c => (
-            <li key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span><strong>{c.titolare}</strong> – saldo: € {c.totale.toFixed(2)}</span>
-              <button onClick={() => handleDeleteConto(c.id)} style={{ marginLeft: '1rem', color: 'red' }}>❌</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  </>
-)
-
+          {conti.length === 0 ? (
+            <p className="no-conti">Nessun conto trovato.</p>
+          ) : (
+            <div className="conti-list">
+              {conti.map(c => (
+                <div className="conto-card" key={c.id}>
+                  <div className="conto-info">
+                    <h3>{c.titolare}</h3>
+                    <p>Saldo: € {c.totale.toFixed(2)}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteConto(c.id)}
+                    className="delete-btn"
+                    aria-label="Elimina conto"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
 }

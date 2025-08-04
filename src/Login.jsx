@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import { useNavigate } from 'react-router-dom'
+import './Login.css'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -23,26 +24,37 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: '400px', margin: 'auto', marginTop: '100px' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        /><br /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        /><br /><br />
-        <button type="submit">Accedi</button>
-      </form>
-      {errore && <p style={{ color: 'red' }}>{errore}</p>}
+    <div className="login-container">
+      <div className="login-box">
+        <h2 className="login-title">Benvenuto!</h2>
+        <form onSubmit={handleLogin} className="login-form">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="login-input"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="login-input"
+          />
+          <button type="submit" className="login-button">Accedi</button>
+          {errore && <p className="login-error">{errore}</p>}
+        </form>
+
+        <p className="login-info">
+          <strong>Credenziali demo:</strong><br />
+          Email: <code>admin@gmail.it</code><br />
+          Password: <code>admin1234</code><br />
+          Vuoi un account personale? <a href="mailto:kristianxhani20@gmail.com">Contattami</a>
+        </p>
+      </div>
     </div>
   )
 }
