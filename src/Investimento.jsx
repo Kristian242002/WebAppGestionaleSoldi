@@ -1,8 +1,20 @@
-// ✅ FILE: Investimenti.jsx aggiornato con eliminazione intelligente storico → saldo originale
-
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Navbar from './Navbar'
+import { Line } from 'react-chartjs-2'
+import './investimento.css'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend)
 
 export default function Investimenti() {
   const [idUtente, setIdUtente] = useState(null)
@@ -10,7 +22,6 @@ export default function Investimenti() {
   const [investimenti, setInvestimenti] = useState([])
   const [storico, setStorico] = useState([])
   const [errore, setErrore] = useState(null)
-
   const [mostraForm, setMostraForm] = useState(false)
   const [titolo, setTitolo] = useState('')
   const [tipo, setTipo] = useState('')
@@ -19,6 +30,7 @@ export default function Investimenti() {
   const [nota, setNota] = useState('')
   const [cartaSelezionata, setCartaSelezionata] = useState('')
   const [valoriTemporanei, setValoriTemporanei] = useState({})
+  const [graficoSelezionato, setGraficoSelezionato] = useState(null)
 
   const fetchData = async () => {
     const { data: { user }, error } = await supabase.auth.getUser()
@@ -46,7 +58,8 @@ export default function Investimenti() {
   }, [])
 
   const aggiornaInvestimento = async (inv) => {
-    const nuovoValore = parseFloat(valoriTemporanei[inv.id])
+    const nuovoValore = parseFloat(valoriTemporanei[inv.id]?.valore)
+    const nuovaData = valoriTemporanei[inv.id]?.data || new Date().toISOString().split('T')[0]
     if (isNaN(nuovoValore) || nuovoValore === inv.importo) return
 
     const differenza = nuovoValore - parseFloat(inv.importo)
@@ -55,6 +68,7 @@ export default function Investimenti() {
       idInvestimento: inv.id,
       nuovoValore,
       differenza,
+      data: nuovaData,
       idUtente
     })
 
@@ -64,54 +78,46 @@ export default function Investimenti() {
     const nuovoTotale = parseFloat(carta.totale) + differenza
     await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
 
-    setValoriTemporanei(prev => ({ ...prev, [inv.id]: '' }))
+    setValoriTemporanei(prev => ({ ...prev, [inv.id]: { valore: '', data: '' } }))
     fetchData()
   }
 
-  const eliminaStorico = async (record) => {
-    const inv = investimenti.find(i => i.id === record.idInvestimento)
+  const eliminaInvestimento = async (inv) => {
     const carta = carte.find(c => c.id === inv.idCarta)
-    const nuovoTotale = parseFloat(carta.totale) - record.differenza
-    const nuovoImporto = inv.importo - record.differenza
+    if (!carta) return
 
-    await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
-    await supabase.from('Investimento').update({ importo: nuovoImporto }).eq('id', inv.id)
-    await supabase.from('StoricoInvestimenti').delete().eq('id', record.id)
+    const variazioni = storico.filter(s => s.idInvestimento === inv.id)
+    for (const s of variazioni) {
+      const nuovoTotaleCarta = parseFloat(carta.totale) - s.differenza
+      const nuovoImportoInvestimento = parseFloat(inv.importo) - s.differenza
+      await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
+      await supabase.from('Investimento').update({ importo: nuovoImportoInvestimento }).eq('id', inv.id)
+      await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
+      inv.importo = nuovoImportoInvestimento
+      carta.totale = nuovoTotaleCarta
+    }
+
+    const nuovoTotaleFinale = parseFloat(carta.totale) + parseFloat(inv.ImportoIniziale ?? 0)
+    await supabase.from('Carta').update({ totale: nuovoTotaleFinale }).eq('id', carta.id)
+    await supabase.from('Investimento').delete().eq('id', inv.id)
     fetchData()
   }
 
-const eliminaInvestimento = async (inv) => {
-  const carta = carte.find(c => c.id === inv.idCarta)
-  if (!carta) return
+  const vendiInvestimento = async (inv) => {
+    const carta = carte.find(c => c.id === inv.idCarta)
+    if (!carta) return
 
-  const variazioni = storico
-    .filter(s => s.idInvestimento === inv.id)
-    .sort((a, b) => new Date(a.data) - new Date(b.data)) // ordine cronologico
+    const nuovoTotale = parseFloat(carta.totale) + parseFloat(inv.importo)
+    await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
 
-  // Elimina ogni storico uno per uno, aggiornando ogni volta
-  for (const s of variazioni) {
-    const nuovoTotaleCarta = parseFloat(carta.totale) - s.differenza
-    const nuovoImportoInvestimento = parseFloat(inv.importo) - s.differenza
+    const storici = storico.filter(s => s.idInvestimento === inv.id)
+    for (const s of storici) {
+      await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
+    }
 
-    await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
-    await supabase.from('Investimento').update({ importo: nuovoImportoInvestimento }).eq('id', inv.id)
-    await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
-
-    // aggiorna lo stato locale se vuoi evitare flicker
-    inv.importo = nuovoImportoInvestimento
-    carta.totale = nuovoTotaleCarta
+    await supabase.from('Investimento').delete().eq('id', inv.id)
+    fetchData()
   }
-
-  // Ora che è tornato al valore iniziale, ripristina l'importo iniziale alla carta
-  const nuovoTotaleFinale = parseFloat(carta.totale) + parseFloat(inv.ImportoIniziale ?? 0)
-  await supabase.from('Carta').update({ totale: nuovoTotaleFinale }).eq('id', carta.id)
-
-  // Infine elimina l’investimento
-  await supabase.from('Investimento').delete().eq('id', inv.id)
-
-  fetchData()
-}
-
 
   const aggiungiInvestimento = async e => {
     e.preventDefault()
@@ -147,89 +153,122 @@ const eliminaInvestimento = async (inv) => {
     fetchData()
   }
 
+  const creaDatiGrafico = (idInvestimento) => {
+    const investimento = investimenti.find(i => i.id === idInvestimento)
+    const storicoInvestimento = storico
+      .filter(s => s.idInvestimento === idInvestimento)
+      .sort((a, b) => new Date(a.data) - new Date(b.data))
+
+    const etichette = [investimento.data, ...storicoInvestimento.map(s => s.data)]
+    const valori = [investimento.ImportoIniziale, ...storicoInvestimento.map(s => s.nuovoValore)]
+
+    return {
+      labels: etichette,
+      datasets: [{
+        label: 'Valore €',
+        data: valori,
+        fill: false,
+        tension: 0.3,
+        borderColor: '#36a2eb',
+        borderWidth: 2
+      }]
+    }
+  }
+
   return (
-    <div style={{ padding: '2rem' }}>
+    <div className="investimenti-container">
       <Navbar />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>💼 Investimenti</h2>
-        <button onClick={() => setMostraForm(prev => !prev)}>
-          {mostraForm ? '✖️ Chiudi' : '➕ Aggiungi investimento'}
-        </button>
+
+      <div className="investimenti-header">
+        <h2>Investimenti</h2>
+        {!mostraForm && (
+          <button onClick={() => setMostraForm(true)}>Aggiungi</button>
+        )}
       </div>
 
+      {carte.length > 0 && (
+        <div className="saldo-box">
+          <strong>Saldo attuale carte</strong>
+          {carte.map(c => (
+            <div key={c.id} className="saldo-carta">
+              <p>{c.titolare}</p>
+              <span>€ {c.totale.toFixed(2)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {mostraForm && (
-        <form onSubmit={aggiungiInvestimento} style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
-          <div>
-            <label>Titolo:</label><br />
-            <input value={titolo} onChange={e => setTitolo(e.target.value)} required />
+        <form onSubmit={aggiungiInvestimento} className="nuovo-investimento-form">
+          <h4>Nuovo Investimento</h4>
+          <label>Titolo:</label>
+          <input type="text" value={titolo} onChange={e => setTitolo(e.target.value)} required />
+          <label>Tipo:</label>
+          <input type="text" value={tipo} onChange={e => setTipo(e.target.value)} required />
+          <label>Data:</label>
+          <input type="date" value={data} onChange={e => setData(e.target.value)} required />
+          <label>Importo iniziale (€):</label>
+          <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)} required />
+          <label>Carta:</label>
+          <select value={cartaSelezionata} onChange={e => setCartaSelezionata(e.target.value)} required>
+            <option value="">-- Seleziona carta --</option>
+            {carte.map(c => (
+              <option key={c.id} value={c.id}>{c.titolare}</option>
+            ))}
+          </select>
+          <label>Note:</label>
+          <textarea value={nota} onChange={e => setNota(e.target.value)} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+            <button type="submit">Salva</button>
+            <button type="button" onClick={() => setMostraForm(false)} style={{ backgroundColor: '#444' }}>
+              Indietro
+            </button>
           </div>
-          <div>
-            <label>Tipo:</label><br />
-            <input value={tipo} onChange={e => setTipo(e.target.value)} required />
-          </div>
-          <div>
-            <label>Data:</label><br />
-            <input type="date" value={data} onChange={e => setData(e.target.value)} required />
-          </div>
-          <div>
-            <label>Importo iniziale (€):</label><br />
-            <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)} required />
-          </div>
-          <div>
-            <label>Carta:</label><br />
-            <select value={cartaSelezionata} onChange={e => setCartaSelezionata(e.target.value)} required>
-              <option value="">-- Seleziona carta --</option>
-              {carte.map(c => (
-                <option key={c.id} value={c.id}>{c.titolare}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>Note:</label><br />
-            <textarea value={nota} onChange={e => setNota(e.target.value)} />
-          </div>
-          <button type="submit">📏 Salva</button>
         </form>
       )}
 
-      <hr />
+      {errore && <p style={{ color: 'red' }}>{errore}</p>}
 
-      {carte.map(carta => (
-        <div key={carta.id} style={{ border: '1px solid #aaa', padding: '1rem', marginBottom: '2rem' }}>
-          <h4>{carta.titolare} – Totale: € {carta.totale.toFixed(2)}</h4>
-          {investimenti.filter(i => i.idCarta === carta.id).map(inv => (
-            <div key={inv.id} style={{ backgroundColor: '#f5f5f5', padding: '0.5rem', margin: '0.5rem 0' }}>
-              <strong>{inv.titolo}</strong> ({inv.tipo}) – € {inv.importo.toFixed(2)}<br />
-              Iniziale: € {(inv.ImportoIniziale ?? 0).toFixed(2)}<br />
-              <small>{inv.note}</small>
-              <div style={{ marginTop: '0.5rem' }}>
-                <label>Nuovo valore:</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={valoriTemporanei[inv.id] || ''}
-                  onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: e.target.value }))}
-                  style={{ marginRight: '0.5rem' }}
-                />
-                <button onClick={() => aggiornaInvestimento(inv)}>📏 Aggiorna</button>
-                <button onClick={() => eliminaInvestimento(inv)} style={{ marginLeft: '0.5rem', color: 'red' }}>🔚️ Elimina</button>
-              </div>
-              <details style={{ marginTop: '0.5rem' }}>
-                <summary>📊 Storico variazioni</summary>
-                <ul>
-                  {storico
-                    .filter(v => v.idInvestimento === inv.id)
-                    .sort((a, b) => new Date(b.data) - new Date(a.data))
-                    .map(v => (
-                      <li key={v.id}>
-                        {v.data}: € {v.nuovoValore.toFixed(2)} ({v.differenza >= 0 ? '+' : ''}{v.differenza})
-                        <button onClick={() => eliminaStorico(v)} style={{ marginLeft: '1rem', color: 'crimson' }}>❌</button>
-                      </li>
-                    ))}
-                </ul>
-              </details>
+      {investimenti.map(inv => (
+        <div key={inv.id} className="investimento-item">
+          <div className="investimento-header">
+            <strong>{inv.titolo}</strong> ({inv.tipo}) – € {inv.importo.toFixed(2)}
+          </div>
+          <div className="investimento-actions">
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Nuovo valore"
+              value={valoriTemporanei[inv.id]?.valore || ''}
+              onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: { ...prev[inv.id], valore: e.target.value } }))}
+            />
+            <input
+              type="date"
+              value={valoriTemporanei[inv.id]?.data || ''}
+              onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: { ...prev[inv.id], data: e.target.value } }))}
+            />
+            <button onClick={() => aggiornaInvestimento(inv)}>Aggiorna</button>
+            <button onClick={() => eliminaInvestimento(inv)}>Elimina</button>
+            <button onClick={() => vendiInvestimento(inv)}>Vendi</button>
+            <button onClick={() => setGraficoSelezionato(graficoSelezionato === inv.id ? null : inv.id)}>
+              Visualizza andamento
+            </button>
+          </div>
+          {graficoSelezionato === inv.id && (
+            <div className="grafico-container">
+              <Line data={creaDatiGrafico(inv.id)} />
+              <ul>
+                {storico
+                  .filter(s => s.idInvestimento === inv.id)
+                  .sort((a, b) => new Date(b.data) - new Date(a.data))
+                  .map(s => (
+                    <li key={s.id}>
+                      {s.data}: € {s.nuovoValore} ({s.differenza >= 0 ? '+' : ''}{s.differenza})
+                    </li>
+                  ))}
+              </ul>
             </div>
-          ))}
+          )}
         </div>
       ))}
     </div>

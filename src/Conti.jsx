@@ -9,6 +9,9 @@ export default function Conti() {
   const [totale, setTotale] = useState('')
   const [idUtente, setIdUtente] = useState(null)
   const [errore, setErrore] = useState(null)
+  const [editId, setEditId] = useState(null)
+  const [nuovoTotale, setNuovoTotale] = useState('')
+  const [toast, setToast] = useState(false)
 
   useEffect(() => {
     const fetchConti = async () => {
@@ -92,9 +95,39 @@ export default function Conti() {
     setConti(prev => prev.filter(c => c.id !== id))
   }
 
+  const handleUpdateConto = async (id) => {
+    const parsed = parseFloat(nuovoTotale)
+    if (isNaN(parsed)) {
+      setErrore('Inserisci un numero valido')
+      return
+    }
+
+    const { error } = await supabase
+      .from('Carta')
+      .update({ totale: parsed })
+      .eq('id', id)
+
+    if (error) {
+      setErrore('Errore durante l\'aggiornamento')
+      console.error(error)
+      return
+    }
+
+    setConti(prev =>
+      prev.map(c => c.id === id ? { ...c, totale: parsed } : c)
+    )
+
+    setEditId(null)
+    setNuovoTotale('')
+    setErrore(null)
+    setToast(true)
+    setTimeout(() => setToast(false), 2500)
+  }
+
   return (
     <>
       <Navbar />
+      {toast && <div className="toast">Conto aggiornato con successo</div>}
       <div className="conti-container">
         <div className="conti-wrapper">
           <h2>I tuoi conti</h2>
@@ -128,15 +161,42 @@ export default function Conti() {
                 <div className="conto-card" key={c.id}>
                   <div className="conto-info">
                     <h3>{c.titolare}</h3>
-                    <p>Saldo: € {c.totale.toFixed(2)}</p>
+                    {editId === c.id ? (
+                      <>
+                        <input
+                          type="number"
+                          value={nuovoTotale}
+                          onChange={(e) => setNuovoTotale(e.target.value)}
+                          step="0.01"
+                          className="input-modifica"
+                        />
+                        <div className="modifica-btns">
+                          <button onClick={() => handleUpdateConto(c.id)} className="btn-primary">Salva</button>
+                          <button onClick={() => setEditId(null)} className="btn-annulla">Annulla</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p>Saldo: € {c.totale.toFixed(2)}</p>
+                        <button
+                          onClick={() => {
+                            setEditId(c.id)
+                            setNuovoTotale(c.totale.toFixed(2))
+                          }}
+                          className="btn-modifica"
+                        >
+                          Modifica
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConto(c.id)}
+                          className="delete-btn"
+                          aria-label="Elimina conto"
+                        >
+                          ✕
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <button
-                    onClick={() => handleDeleteConto(c.id)}
-                    className="delete-btn"
-                    aria-label="Elimina conto"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>

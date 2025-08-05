@@ -54,6 +54,8 @@ export default function Login() {
           Password: <code>admin1234</code><br />
           Vuoi un account personale? <a href="mailto:kristianxhani20@gmail.com">Contattami</a>
         </p>
+
+        <p className="login-version">Versione 0.0.1</p>
       </div>
     </div>
   )
