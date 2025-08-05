@@ -50,7 +50,7 @@ export default function Login() {
 
         <p className="login-info">
           <strong>Credenziali demo:</strong><br />
-          Email: <code>admin@gmail.it</code><br />
+          Email: <code>admin@gmail.com</code><br />
           Password: <code>admin1234</code><br />
           Vuoi un account personale? <a href="mailto:kristianxhani20@gmail.com">Contattami</a>
         </p>
