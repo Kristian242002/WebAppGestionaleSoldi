@@ -30,7 +30,7 @@ Il codice è interamente sviluppato da zero, con attenzione alla qualità del co
 
 ## Demo
 
-Una versione dimostrativa è disponibile all’indirizzo seguente:
+Per provare il sito, nel Login ci sono le credenziali di accesso ! 
 
 
 > Per domande, feedback o collaborazioni, è possibile aprire una issue oppure contattarmi direttamente tramite il mio profilo GitHub.
