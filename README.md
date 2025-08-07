@@ -18,7 +18,6 @@ Pensata per l’utilizzo individuale, consente di monitorare entrate e uscite, g
 - **Supabase** per database, autenticazione e storage
 - **PostgreSQL** come sistema di gestione dati
 - **Chart.js** per la visualizzazione grafica
-- **Tailwind CSS** per una struttura visiva flessibile e curata
 
 ## Obiettivo del progetto
 
