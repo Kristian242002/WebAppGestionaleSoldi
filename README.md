@@ -14,10 +14,10 @@ Pensata per l’utilizzo individuale, consente di monitorare entrate e uscite, g
 
 ## Tecnologie utilizzate
 
-- **React** con **Vite** per un frontend moderno e performante
+- **React** con **Vite** per la parte di frontend
 - **Supabase** per database, autenticazione e storage
 - **PostgreSQL** come sistema di gestione dati
-- **Chart.js** per la visualizzazione grafica
+- **Chart.js** per la visualizzazione dei grafici
 
 ## Obiettivo del progetto
 
@@ -33,7 +33,7 @@ Il codice è interamente sviluppato da zero, con attenzione alla qualità del co
 Per provare il sito, nel Login ci sono le credenziali di accesso ! 
 
 
-> Per domande, feedback o collaborazioni, è possibile aprire una issue oppure contattarmi direttamente tramite il mio profilo GitHub.
+> Per domande, feedback o collaborazioni, è possibile aprire una issue oppure contattarmi direttamente tramite il mio profilo GitHub o all'email kristianxhani20@gmail.com.
 
 ---
 
