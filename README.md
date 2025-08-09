@@ -1,6 +1,6 @@
 # MyCash – Gestione finanziaria personale
 
-**MyCash** è un’applicazione web progettata per tenere sotto controllo le proprie finanze personali in modo semplice, ordinato e accessibile da qualsiasi dispositivo.  
+**MyCash** è un’applicazione web progettata per tenere sotto controllo le proprie finanze personali in modo semplice e ordinato.  
 Pensata per l’utilizzo individuale, consente di monitorare entrate e uscite, gestire conti multipli, visualizzare l’andamento degli investimenti e analizzare le proprie abitudini di spesa attraverso grafici dinamici.
 
 ## Caratteristiche principali
