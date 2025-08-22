@@ -55,14 +55,15 @@ export default function Investimenti() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const aggiornaInvestimento = async (inv) => {
     const nuovoValore = parseFloat(valoriTemporanei[inv.id]?.valore)
     const nuovaData = valoriTemporanei[inv.id]?.data || new Date().toISOString().split('T')[0]
-    if (isNaN(nuovoValore) || nuovoValore === inv.importo) return
+    if (isNaN(nuovoValore) || nuovoValore === Number(inv.importo)) return
 
-    const differenza = nuovoValore - parseFloat(inv.importo)
+    const differenza = nuovoValore - Number(inv.importo)
 
     await supabase.from('StoricoInvestimenti').insert({
       idInvestimento: inv.id,
@@ -75,10 +76,49 @@ export default function Investimenti() {
     await supabase.from('Investimento').update({ importo: nuovoValore }).eq('id', inv.id)
 
     const carta = carte.find(c => c.id === inv.idCarta)
-    const nuovoTotale = parseFloat(carta.totale) + differenza
-    await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
+    if (carta) {
+      const nuovoTotale = Number(carta.totale) + differenza
+      await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
+    }
 
     setValoriTemporanei(prev => ({ ...prev, [inv.id]: { valore: '', data: '' } }))
+    fetchData()
+  }
+
+  // 🔥 NUOVO: aggiungi fondi all'investimento (aumenta importo e scala dalla carta)
+  const aggiungiFondi = async (inv) => {
+    const importoAggiunta = parseFloat(valoriTemporanei[inv.id]?.aggiunta)
+    const dataAggiunta = valoriTemporanei[inv.id]?.aggiuntaData || new Date().toISOString().split('T')[0]
+    if (isNaN(importoAggiunta) || importoAggiunta <= 0) return
+
+    const valoreAttuale = Number(inv.importo)
+    const nuovoValore = valoreAttuale + importoAggiunta
+
+    // Storico (differenza positiva)
+    await supabase.from('StoricoInvestimenti').insert({
+      idInvestimento: inv.id,
+      nuovoValore,
+      differenza: importoAggiunta,
+      data: dataAggiunta,
+      idUtente
+    })
+
+    // Aggiorna investimento
+    await supabase.from('Investimento').update({ importo: nuovoValore }).eq('id', inv.id)
+
+    // Scala dalla carta collegata
+    const carta = carte.find(c => c.id === inv.idCarta)
+    if (carta) {
+      const nuovoTotaleCarta = Number(carta.totale) - importoAggiunta
+      await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
+    }
+
+    // pulizia input locali
+    setValoriTemporanei(prev => ({
+      ...prev,
+      [inv.id]: { ...(prev[inv.id] || {}), aggiunta: '', aggiuntaData: '' }
+    }))
+
     fetchData()
   }
 
@@ -87,9 +127,10 @@ export default function Investimenti() {
     if (!carta) return
 
     const variazioni = storico.filter(s => s.idInvestimento === inv.id)
+    // ripristina carta e importo investimento togliendo ogni variazione
     for (const s of variazioni) {
-      const nuovoTotaleCarta = parseFloat(carta.totale) - s.differenza
-      const nuovoImportoInvestimento = parseFloat(inv.importo) - s.differenza
+      const nuovoTotaleCarta = Number(carta.totale) - Number(s.differenza)
+      const nuovoImportoInvestimento = Number(inv.importo) - Number(s.differenza)
       await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
       await supabase.from('Investimento').update({ importo: nuovoImportoInvestimento }).eq('id', inv.id)
       await supabase.from('StoricoInvestimenti').delete().eq('id', s.id)
@@ -97,7 +138,7 @@ export default function Investimenti() {
       carta.totale = nuovoTotaleCarta
     }
 
-    const nuovoTotaleFinale = parseFloat(carta.totale) + parseFloat(inv.ImportoIniziale ?? 0)
+    const nuovoTotaleFinale = Number(carta.totale) + Number(inv.ImportoIniziale ?? 0)
     await supabase.from('Carta').update({ totale: nuovoTotaleFinale }).eq('id', carta.id)
     await supabase.from('Investimento').delete().eq('id', inv.id)
     fetchData()
@@ -107,7 +148,7 @@ export default function Investimenti() {
     const carta = carte.find(c => c.id === inv.idCarta)
     if (!carta) return
 
-    const nuovoTotale = parseFloat(carta.totale) + parseFloat(inv.importo)
+    const nuovoTotale = Number(carta.totale) + Number(inv.importo)
     await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
 
     const storici = storico.filter(s => s.idInvestimento === inv.id)
@@ -140,8 +181,10 @@ export default function Investimenti() {
     }
 
     const carta = carte.find(c => c.id === parseInt(cartaSelezionata))
-    const nuovoTotale = parseFloat(carta.totale) - iniziale
-    await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
+    if (carta) {
+      const nuovoTotale = Number(carta.totale) - iniziale
+      await supabase.from('Carta').update({ totale: nuovoTotale }).eq('id', carta.id)
+    }
 
     setTitolo('')
     setTipo('')
@@ -157,10 +200,10 @@ export default function Investimenti() {
     const investimento = investimenti.find(i => i.id === idInvestimento)
     const storicoInvestimento = storico
       .filter(s => s.idInvestimento === idInvestimento)
-      .sort((a, b) => new Date(a.data) - new Date(b.data))
+      .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
 
     const etichette = [investimento.data, ...storicoInvestimento.map(s => s.data)]
-    const valori = [investimento.ImportoIniziale, ...storicoInvestimento.map(s => s.nuovoValore)]
+    const valori = [Number(investimento.ImportoIniziale), ...storicoInvestimento.map(s => Number(s.nuovoValore))]
 
     return {
       labels: etichette,
@@ -175,6 +218,9 @@ export default function Investimenti() {
     }
   }
 
+  // Totale di tutte le azioni/investimenti
+  const totaleInvestimenti = investimenti.reduce((sum, i) => sum + Number(i.importo || 0), 0)
+
   return (
     <div className="investimenti-container">
       <Navbar />
@@ -186,13 +232,19 @@ export default function Investimenti() {
         )}
       </div>
 
+      {/* 🔝 Totale portafoglio */}
+      <div className="totale-investimenti-box">
+        <strong>Totale portafoglio investimenti:</strong>
+        <span>€ {Number(totaleInvestimenti).toFixed(2)}</span>
+      </div>
+
       {carte.length > 0 && (
         <div className="saldo-box">
           <strong>Saldo attuale carte</strong>
           {carte.map(c => (
             <div key={c.id} className="saldo-carta">
               <p>{c.titolare}</p>
-              <span>€ {c.totale.toFixed(2)}</span>
+              <span>€ {Number(c.totale).toFixed(2)}</span>
             </div>
           ))}
         </div>
@@ -232,9 +284,11 @@ export default function Investimenti() {
       {investimenti.map(inv => (
         <div key={inv.id} className="investimento-item">
           <div className="investimento-header">
-            <strong>{inv.titolo}</strong> ({inv.tipo}) – € {inv.importo.toFixed(2)}
+            <strong>{inv.titolo}</strong> ({inv.tipo}) – € {Number(inv.importo).toFixed(2)}
           </div>
+
           <div className="investimento-actions">
+            {/* Aggiorna al nuovo valore assoluto */}
             <input
               type="number"
               step="0.01"
@@ -248,22 +302,40 @@ export default function Investimenti() {
               onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: { ...prev[inv.id], data: e.target.value } }))}
             />
             <button onClick={() => aggiornaInvestimento(inv)}>Aggiorna</button>
+
+            {/* 🔥 NUOVI INPUT + BOTTONE: aggiungi fondi */}
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Aggiungi €"
+              value={valoriTemporanei[inv.id]?.aggiunta || ''}
+              onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: { ...prev[inv.id], aggiunta: e.target.value } }))}
+              style={{ marginLeft: '0.5rem' }}
+            />
+            <input
+              type="date"
+              value={valoriTemporanei[inv.id]?.aggiuntaData || ''}
+              onChange={e => setValoriTemporanei(prev => ({ ...prev, [inv.id]: { ...prev[inv.id], aggiuntaData: e.target.value } }))}
+            />
+            <button onClick={() => aggiungiFondi(inv)}>Aggiungi fondi</button>
+
             <button onClick={() => eliminaInvestimento(inv)}>Elimina</button>
             <button onClick={() => vendiInvestimento(inv)}>Vendi</button>
             <button onClick={() => setGraficoSelezionato(graficoSelezionato === inv.id ? null : inv.id)}>
               Visualizza andamento
             </button>
           </div>
+
           {graficoSelezionato === inv.id && (
             <div className="grafico-container">
               <Line data={creaDatiGrafico(inv.id)} />
               <ul>
                 {storico
                   .filter(s => s.idInvestimento === inv.id)
-                  .sort((a, b) => new Date(b.data) - new Date(a.data))
+                  .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
                   .map(s => (
                     <li key={s.id}>
-                      {s.data}: € {s.nuovoValore} ({s.differenza >= 0 ? '+' : ''}{s.differenza})
+                      {s.data}: € {Number(s.nuovoValore).toFixed(2)} ({Number(s.differenza) >= 0 ? '+' : ''}{Number(s.differenza).toFixed(2)})
                     </li>
                   ))}
               </ul>
