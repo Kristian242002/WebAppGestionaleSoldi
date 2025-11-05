@@ -85,7 +85,6 @@ export default function Investimenti() {
     fetchData()
   }
 
-  // 🔥 NUOVO: aggiungi fondi all'investimento (aumenta importo e scala dalla carta)
   const aggiungiFondi = async (inv) => {
     const importoAggiunta = parseFloat(valoriTemporanei[inv.id]?.aggiunta)
     const dataAggiunta = valoriTemporanei[inv.id]?.aggiuntaData || new Date().toISOString().split('T')[0]
@@ -103,17 +102,14 @@ export default function Investimenti() {
       idUtente
     })
 
-    // Aggiorna investimento
     await supabase.from('Investimento').update({ importo: nuovoValore }).eq('id', inv.id)
 
-    // Scala dalla carta collegata
     const carta = carte.find(c => c.id === inv.idCarta)
     if (carta) {
       const nuovoTotaleCarta = Number(carta.totale) - importoAggiunta
       await supabase.from('Carta').update({ totale: nuovoTotaleCarta }).eq('id', carta.id)
     }
 
-    // pulizia input locali
     setValoriTemporanei(prev => ({
       ...prev,
       [inv.id]: { ...(prev[inv.id] || {}), aggiunta: '', aggiuntaData: '' }
@@ -127,7 +123,6 @@ export default function Investimenti() {
     if (!carta) return
 
     const variazioni = storico.filter(s => s.idInvestimento === inv.id)
-    // ripristina carta e importo investimento togliendo ogni variazione
     for (const s of variazioni) {
       const nuovoTotaleCarta = Number(carta.totale) - Number(s.differenza)
       const nuovoImportoInvestimento = Number(inv.importo) - Number(s.differenza)
@@ -218,7 +213,58 @@ export default function Investimenti() {
     }
   }
 
-  // Totale di tutte le azioni/investimenti
+const cancellaMovimento = async (idStorico) => {
+  if (!window.confirm("Sei sicuro di voler cancellare il movimento?")) return
+
+  const { data:movimento,error:erroreMov } = await supabase
+    .from('StoricoInvestimenti')
+    .select("idInvestimento,differenza")
+    .eq('id', idStorico)
+    .single()
+
+  if (erroreMov || !movimento) {
+    console.error("Errore nella cancellazione movimento:", error)
+    setErrore("Errore durante la cancellazione del movimento")
+  } 
+
+  const {data: investimento, error:erroreInv} = await supabase
+    .from("Investimento")
+    .select("importo")
+    .eq("id",movimento.idInvestimento)
+    .single()
+  
+  if(erroreInv || !investimento){
+    console.error("Errore nel recupero investimento:",erroreInv);
+    setErrore("Errore durante il recupero dell'investimento");
+    return
+  }
+
+  const newimporto =  Number(investimento.importo) - Number(movimento.differenza);
+
+  const {error : erroreUpdate} = await supabase
+    .from("Investimento")
+    .update({importo : newimporto})
+    .eq("id",movimento.idInvestimento)
+
+  if(erroreUpdate){
+    console.error("Errore aggiornamento importo:",erroreUpdate);
+    setErrore("Errore durante l'aggionramento dell'importo");
+    return
+  }
+
+  const{error : erroreDelete} = await supabase
+    .from("StoricoInvestimenti")
+    .delete()
+    .eq("id",idStorico)
+
+  if (erroreDelete) {
+    console.error("Errore nella cancellazione movimento:", erroreDelete)
+    setErrore("Errore durante la cancellazione del movimento")
+  } else {
+    fetchData()
+  }
+}
+
   const totaleInvestimenti = investimenti.reduce((sum, i) => sum + Number(i.importo || 0), 0)
 
   return (
@@ -232,7 +278,6 @@ export default function Investimenti() {
         )}
       </div>
 
-      {/* 🔝 Totale portafoglio */}
       <div className="totale-investimenti-box">
         <strong>Totale portafoglio investimenti:</strong>
         <span>€ {Number(totaleInvestimenti).toFixed(2)}</span>
@@ -336,8 +381,16 @@ export default function Investimenti() {
                   .map(s => (
                     <li key={s.id}>
                       {s.data}: € {Number(s.nuovoValore).toFixed(2)} ({Number(s.differenza) >= 0 ? '+' : ''}{Number(s.differenza).toFixed(2)})
+                            <button 
+          onClick={() => cancellaMovimento(s.id)} 
+          style={{ marginLeft: '8px', backgroundColor: '#c0392b', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 6px' }}
+        >
+          Cancella
+        </button>
+                    
                     </li>
                   ))}
+
               </ul>
             </div>
           )}

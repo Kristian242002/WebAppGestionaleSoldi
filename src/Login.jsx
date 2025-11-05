@@ -55,7 +55,7 @@ export default function Login() {
           Vuoi un account personale? <a href="mailto:kristianxhani20@gmail.com">Contattami</a>
         </p>
 
-        <p className="login-version">Versione 0.0.2</p>
+        <p className="login-version">Versione 0.0.3</p>
       </div>
     </div>
   )
